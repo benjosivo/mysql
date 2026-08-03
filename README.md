@@ -4,9 +4,45 @@ Shared MySQL client (pooling, automatic retry on deadlock/lock-timeout, transact
 
 ## Install
 
+This package is published to **GitHub Packages**, not the public npm registry, so every machine needs a one-time setup before `npm install` will work — even though the repo and package are public. GitHub Packages never allows anonymous installs; a valid GitHub token is always required.
+
+### One-time setup (per machine)
+
+1. **Create a GitHub Personal Access Token.**
+   GitHub → click your avatar → **Settings** → **Developer settings** → **Personal access tokens** → **Tokens (classic)** → **Generate new token (classic)**.
+   Scope needed: **`read:packages`**. Copy the token — GitHub only shows it once.
+
+2. **Add two lines to your global npm config.**
+   Find the file path:
+   ```
+   npm config get globalconfig
+   ```
+   It's typically `C:\Users\<you>\AppData\Roaming\npm\etc\npmrc` on Windows. Open that file in a text editor and add:
+   ```
+   @benjosivo:registry=https://npm.pkg.github.com
+   //npm.pkg.github.com/:_authToken=YOUR_TOKEN_HERE
+   ```
+   Editing the file directly is more reliable than `npm config set` — on some npm versions, `npm config set @benjosivo:registry=... --global` fails with a cryptic `` `` is not a valid npm option `` error. If you'd rather use the CLI, use the space-separated form instead of `=`:
+   ```
+   npm config set @benjosivo:registry https://npm.pkg.github.com --global
+   ```
+
+3. **Verify both lines took effect:**
+   ```
+   npm config list
+   ```
+   You should see both `@benjosivo:registry = "https://npm.pkg.github.com"` and `//npm.pkg.github.com/:_authToken = (protected)` in the output.
+
+### Install
+
 ```
 npm install @benjosivo/mysql
 ```
+
+### Troubleshooting
+
+- **`404 Not Found - GET https://registry.npmjs.org/@benjosivo%2fmysql`** — npm is checking the default npm registry instead of GitHub Packages. This means the `@benjosivo:registry` line from step 2 above isn't set (check with `npm config get @benjosivo:registry`). Add it and retry.
+- **401/403 or `ENEEDAUTH`** — the auth token is missing, expired, or lacks `read:packages` scope. Regenerate a token and re-add it.
 
 ## Usage
 
