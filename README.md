@@ -1,17 +1,17 @@
-# @tonorg/db-client
+# @benjosivo/mysql
 
 Shared MySQL client (pooling, automatic retry on deadlock/lock-timeout, transaction helpers) for use across multiple projects. Nothing connects until you call `init()` — the package has no side effects at import time and no dependency on any particular env var naming.
 
 ## Install
 
 ```
-npm install @tonorg/db-client
+npm install @benjosivo/mysql
 ```
 
 ## Usage
 
 ```ts
-import { init, executeMySQLQuery, closeMySQLConnection } from '@tonorg/db-client';
+import { init, executeMySQLQuery, closeMySQLConnection } from '@benjosivo/mysql';
 
 await init({
     host: process.env.DB_HOST!,
