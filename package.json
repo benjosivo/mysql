@@ -1,24 +1,22 @@
 {
-  "name": "@benjosivo/mysql",
-  "version": "1.0.3",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "tsc",
-    "prepublishOnly": "npm run build"
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
-  "dependencies": {
-    "mysql2": "^3.x",
-    "node-sql-parser": "^5.4.0"
-  },
-  "devDependencies": {
-    "@types/node": "^26.1.2",
-    "typescript": "^7.0.2"
-  }
+    "name": "@benjosivo/mysql",
+    "version": "1.0.3",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "prepublishOnly": "npm run build"
+    },
+    "dependencies": {
+        "mysql2": "^3.x",
+        "node-sql-parser": "^5.4.0"
+    },
+    "devDependencies": {
+        "@types/node": "^26.1.2",
+        "typescript": "^7.0.2"
+    },
+    "license": "MIT"
 }
