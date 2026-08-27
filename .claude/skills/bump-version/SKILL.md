@@ -155,13 +155,67 @@ If the repo's history shows no tags, skip tagging. If it tags but you're on a fe
 branch, hold the tag until the branch merges — tags on branch commits that later get
 squashed point at commits nobody keeps.
 
-## Publishing is a separate, explicitly requested step
+## 8. Publish to the registry
 
-Bumping the version and publishing the artifact are different actions with very different
-consequences: `npm publish`, `cargo publish`, `twine upload`, and `mvn deploy` push
-something to the outside world that is difficult or impossible to take back. Do them only
-when the user asks in so many words, and confirm the registry and the credentials in use
-first. "Bump the version" alone is not a request to publish.
+A bump that never gets published is invisible to consumers — `npm install` still hands them
+the old version. So the release isn't finished at the commit; it's finished when the new
+version is on the registry.
+
+**First check whether CI already does it.** If a workflow publishes on tag or release,
+pushing the tag *is* the publish, and running it again locally races with CI or fails on a
+duplicate version:
+
+```bash
+grep -rl "publish\|release" .github/workflows/ 2>/dev/null
+```
+
+**Then confirm what you're about to push, and where.** A dry run prints the exact file
+list, the resolved version, and the registry it would go to — cheap insurance against
+publishing to the wrong registry or shipping a package that's missing its build output:
+
+```bash
+npm publish --dry-run
+npm whoami --registry=https://registry.npmjs.org   # confirm you're authenticated
+```
+
+Scoped packages are the usual surprise here: `@scope/name` goes to npmjs.org by default,
+and only lands somewhere else if `publishConfig.registry` is set in `package.json` or the
+scope is mapped in `.npmrc` (`@scope:registry=https://npm.pkg.github.com`, with the token
+in `NODE_AUTH_TOKEN` or `GITHUB_TOKEN`). A scoped package's first *public* release on
+npmjs also needs `--access public`, since scoped packages default to private.
+
+If `prepublishOnly` or `prepack` is defined, it runs before the upload — a failing build
+stops the publish, which is exactly what you want.
+
+**Then publish:**
+
+| Ecosystem | Command |
+|---|---|
+| npm | `npm publish` (add `--access public` for a scoped package's first public release) |
+| Yarn (berry) | `yarn npm publish` |
+| Rust | `cargo publish` |
+| Python | `poetry publish --build`, or `python -m build && twine upload dist/*` |
+| Maven | `mvn deploy` |
+| .NET | `dotnet nuget push <pkg>.<version>.nupkg --source <feed>` |
+| Helm | `helm push <chart>-<version>.tgz oci://<registry>` |
+| Go | nothing to upload — the pushed tag is the release |
+
+Confirm it landed, since a silent failure here is easy to miss:
+
+```bash
+npm view <package-name> version
+```
+
+**Version numbers are single-use.** npm refuses to republish over an existing version,
+unpublishing is only allowed within 72 hours and is blocked once others depend on it, a
+yanked crate doesn't free its number, and PyPI won't accept a re-upload of a deleted
+release. That's why the dry run comes first — and if something does slip through, the fix
+is another bump, never a re-publish of the same number.
+
+Because publishing is outward-facing and effectively permanent, make sure this release is
+actually meant to go out before running it — then run it. Publishing to a registry the
+user hasn't mentioned, or on credentials you haven't confirmed, is the one thing worth
+stopping to ask about.
 
 ## Quick checklist
 
@@ -173,4 +227,4 @@ first. "Bump the version" alone is not a request to publish.
 6. Check the diff is only version lines; build to confirm it still works
 7. Changelog entry, if the repo has one
 8. Commit in the repo's style, tag if it tags, push
-9. Publish only when explicitly asked
+9. Publish: check CI doesn't already do it, `--dry-run` to verify files and registry, then publish and confirm it landed
