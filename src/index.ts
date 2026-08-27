@@ -375,6 +375,51 @@ export async function executeMySQLQuery2(opt: { query: string; values?: any[]; c
     }
 }
 
+/**
+ * Runs a statement through mysql2's `query()` (text protocol) instead of `execute()`
+ * (prepared-statement protocol).
+ *
+ * MySQL refuses a number of statements in the prepared-statement protocol
+ * ("This command is not supported in the prepared statement protocol yet") —
+ * `SET GLOBAL ...`, `USE ...`, `LOCK TABLES`, several `SHOW` variants, etc.
+ * Use this for those; keep using `executeMySQLQuery` for everything else, since
+ * that one adds deadlock/lock-timeout retries and prepared statements.
+ *
+ * Values are escaped and interpolated client-side by mysql2 (`?` placeholders),
+ * so parameters are still safe to pass.
+ *
+ * Returns the rows on success, or `{ error, values, connKey }` on failure —
+ * same shape as `executeMySQLQuery`.
+ */
+export async function runMySQLQuery(query: string, values: any[] = [], connKey?: string) {
+    requireConfig();
+
+    let conn: mysql.PoolConnection | undefined;
+
+    try {
+        if (connKey) {
+            const tr = listTransaction.get(connKey);
+            if (!tr) {
+                const msg = `Transaction key not found: ${connKey}`;
+                handleError(msg, 'MySQL: runMySQLQuery');
+                return { error: msg, values, connKey };
+            }
+            tr.lastUpdate = Date.now();
+            conn = tr.conn;
+        } else if (lastConnectionCheck + 5 * 60_000 <= Date.now()) {
+            await ensurePool();
+        }
+
+        const [rows] = await (conn ?? requirePool()).query(query, values);
+        return rows;
+    } catch (error: any) {
+        const errorMsg = String(error?.message ?? error);
+        const queryStr = query.length > 200 ? `${query.substring(0, 200)}...` : query;
+        handleError(error, `MySQL${error?.code ? ` [${error.code}]` : ''}${connKey ? ' (using connection)' : ''}\n${errorMsg}\n\nparams: ${values}\n\nquery: ${queryStr}`);
+        return { error: error?.message ?? error, values, connKey: connKey ?? null };
+    }
+}
+
 async function createTransaction(): Promise<{ conn: mysql.PoolConnection; connKey: string } | { error: unknown }> {
     const keyConn = randomUUID();
     try {
