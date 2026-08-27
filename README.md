@@ -51,6 +51,34 @@ executeMySQLQuery(query, values?, returnFieldTypes?, connKey?)
 
 Returns the rows directly on success. On failure it returns `{ error, values, connKey }` instead of throwing (matches `mysql2`'s row-result shape so existing call sites don't need try/catch).
 
+### Statements prepared statements can't run
+
+`executeMySQLQuery` uses `execute()` (MySQL's prepared-statement protocol), and MySQL rejects a
+number of statements there with *"This command is not supported in the prepared statement protocol
+yet"* — `SET GLOBAL ...`, `USE ...`, `LOCK TABLES`, several `SHOW` variants, and so on. For those,
+use `runMySQLQuery`, which goes through `query()` (text protocol) instead:
+
+```ts
+import { runMySQLQuery } from '@benjosivo/mysql';
+
+await runMySQLQuery("SET GLOBAL general_log = 'OFF'");
+
+// placeholders still work — mysql2 escapes and interpolates them client-side
+await runMySQLQuery('SET GLOBAL general_log = ?', ['OFF']);
+
+// optionally run inside an existing transaction
+await runMySQLQuery('SELECT * FROM users WHERE id = ?', [userId], connKey);
+```
+
+```ts
+runMySQLQuery(query, values?, connKey?)
+```
+
+Same result shape as `executeMySQLQuery`: rows on success, `{ error, values, connKey }` on failure.
+It's deliberately simple — no deadlock/lock-timeout retry — so prefer `executeMySQLQuery` for
+regular application queries and keep this one for statements the prepared-statement protocol
+refuses.
+
 ### Transactions
 
 ```ts
