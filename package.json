@@ -18,5 +18,9 @@
         "@types/node": "^26.1.2",
         "typescript": "^7.0.2"
     },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/benjosivo/mysql.git"
+    },
     "license": "MIT"
 }
