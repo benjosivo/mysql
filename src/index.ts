@@ -340,7 +340,7 @@ async function killOpenTRX() {
             listTransaction.delete(key);
             continue;
         }
-        pending.push(killTransaction(key, `it sat idle for more than ${staleTransactionMs}ms`, true));
+        pending.push(killTransaction(key, `it sat idle for more than ${new Intl.NumberFormat('fr-FR').format(staleTransactionMs)}ms`, true));
     }
 
     await Promise.all(pending);
@@ -523,7 +523,8 @@ async function runStatement(
     }
 
     const run = async (target: mysql.Pool | mysql.PoolConnection): Promise<{ rows: any; fields: mysql.FieldPacket[] }> => {
-        const result: any = mode === 'query' ? await (target as mysql.Pool).query(query, values) : await (target as mysql.Pool).execute(query, values);
+        const result: any =
+            mode === 'query' ? await (target as mysql.Pool).query(query, values) : await (target as mysql.Pool).execute(query, values);
         return { rows: result?.[0], fields: (result?.[1] ?? []) as mysql.FieldPacket[] };
     };
 
@@ -539,7 +540,12 @@ async function runStatement(
         if (!target) {
             // Acquire explicitly: without a connection handle there is no way to
             // interrupt the statement later, and a saturated pool can block forever.
-            target = borrowed = await withTimeout(requirePool().getConnection(), timeoutMs, `Timed out after ${timeoutMs}ms waiting for a connection from the pool`, safeRelease);
+            target = borrowed = await withTimeout(
+                requirePool().getConnection(),
+                timeoutMs,
+                `Timed out after ${timeoutMs}ms waiting for a connection from the pool`,
+                safeRelease,
+            );
         }
 
         const exec = run(target);
@@ -660,7 +666,11 @@ export async function executeMySQLQuery3<T = any>(opt: MySQLQueryOptions): Promi
      * - Neither (plain pool):
      *     - Wait (delay depends on the error) and retry against the pool.
      */
-    async function executeWithRetry(startConn: mysql.PoolConnection | undefined, startKey: string | undefined, callerOwnsConnection: boolean): Promise<{ rows: any; fields: mysql.FieldPacket[]; connKey?: string }> {
+    async function executeWithRetry(
+        startConn: mysql.PoolConnection | undefined,
+        startKey: string | undefined,
+        callerOwnsConnection: boolean,
+    ): Promise<{ rows: any; fields: mysql.FieldPacket[]; connKey?: string }> {
         let conn = startConn;
         let key = startKey;
 
@@ -784,7 +794,10 @@ export async function executeMySQLQuery3<T = any>(opt: MySQLQueryOptions): Promi
 
         const errorMsg = describeError(error);
         const queryStr = query.length > 200 ? `${query.substring(0, 200)}...` : query;
-        handleError(error, `MySQL${error?.code ? ` [${error.code}]` : ''}${connKey ? ' (using connection)' : ''}\n${errorMsg}\n\nparams: ${values}\n\nquery: ${queryStr}`);
+        handleError(
+            error,
+            `MySQL${error?.code ? ` [${error.code}]` : ''}${connKey ? ' (using connection)' : ''}\n${errorMsg}\n\nparams: ${values}\n\nquery: ${queryStr}`,
+        );
 
         return fail('execute', error, values, keyOf());
     }
@@ -876,7 +889,10 @@ export async function runMySQLQuery(query: string, values: any[] = [], connKey?:
     } catch (error: any) {
         const errorMsg = describeError(error);
         const queryStr = query.length > 200 ? `${query.substring(0, 200)}...` : query;
-        handleError(error, `MySQL${error?.code ? ` [${error.code}]` : ''}${connKey ? ' (using connection)' : ''}\n${errorMsg}\n\nparams: ${values}\n\nquery: ${queryStr}`);
+        handleError(
+            error,
+            `MySQL${error?.code ? ` [${error.code}]` : ''}${connKey ? ' (using connection)' : ''}\n${errorMsg}\n\nparams: ${values}\n\nquery: ${queryStr}`,
+        );
         return { error: error?.message ?? error, values, connKey: connKey ?? null, ...errorDetails(error) };
     }
 }
