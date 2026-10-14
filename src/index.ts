@@ -20,6 +20,7 @@ export interface MySQLClientConfig {
     defaultQueryTimeoutMs?: number;
     /** Called whenever this client encounters an error it can't throw directly (e.g. inside retry loops). Defaults to console.error. */
     onError?: (error: unknown, context: string) => void;
+    otherOtions: mysql.PoolOptions;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -121,6 +122,7 @@ function createPool() {
         connectionLimit: cfg.connectionLimit ?? 50,
         queueLimit: cfg.queueLimit ?? 0,
         multipleStatements: cfg.multipleStatements ?? true,
+        ...cfg.otherOtions
     });
 }
 
