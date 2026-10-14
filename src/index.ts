@@ -20,7 +20,7 @@ export interface MySQLClientConfig {
     defaultQueryTimeoutMs?: number;
     /** Called whenever this client encounters an error it can't throw directly (e.g. inside retry loops). Defaults to console.error. */
     onError?: (error: unknown, context: string) => void;
-    otherOtions: mysql.PoolOptions;
+    otherOtions?: mysql.PoolOptions;
 }
 
 /* -------------------------------------------------------------------------- */
